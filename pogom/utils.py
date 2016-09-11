@@ -296,7 +296,7 @@ def get_args():
             except Exception as e:
                 print("Error: Pokemon IDs need to be Interger", e)
                 sys.exit(1)
-                
+
     return args
 
 
