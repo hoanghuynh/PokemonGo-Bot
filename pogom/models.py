@@ -596,8 +596,8 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue):
                 printPokemon(p['pokemon_data']['pokemon_id'], p['latitude'],
                              p['longitude'], d_t)
 
-                # Not in Ignore list
-                if str(p['pokemon_data']['pokemon_id']) not in args.ignore_list:
+                # Parse only if Pokemon not in Ignore list
+                if p['pokemon_data']['pokemon_id'] not in args.ignore_list:
                     pokemons[p['encounter_id']] = {
                         'encounter_id': b64encode(str(p['encounter_id'])),
                         'spawnpoint_id': p['spawn_point_id'],
