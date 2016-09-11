@@ -288,13 +288,13 @@ def get_args():
             args.scheduler = 'HexSearchSpawnpoint'
         else:
             args.scheduler = 'HexSearch'
-            
+
         # Return int for Pokemon Ignore list if it's exist
         if len(args.ignore_list):
             try:
                 args.ignore_list = set([int(i) for i in args.ignore_list])
             except Exception as e:
-                print("Error: Pokemon IDs need to be Interger",e)
+                print("Error: Pokemon IDs need to be Interger", e)
                 sys.exit(1)
                 
     return args
