@@ -288,7 +288,7 @@ def get_args():
             args.scheduler = 'HexSearchSpawnpoint'
         else:
             args.scheduler = 'HexSearch'
-
+            
         # Return int for Pokemon Ignore list if it's exist
         if len(args.ignore_list):
             try:
