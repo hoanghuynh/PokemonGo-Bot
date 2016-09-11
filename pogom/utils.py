@@ -293,8 +293,8 @@ def get_args():
         if len(args.ignore_list):
             try:
                 args.ignore_list = set([int(i) for i in args.ignore_list])
-            except ValueError:
-                print(sys.argv[0] + ": Error: Pokemon IDs ned to be Interger")
+            except Exception as e:
+                print("Error: Pokemon IDs need to be Interger",e)
                 sys.exit(1)
                 
     return args
