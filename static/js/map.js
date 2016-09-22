@@ -42,6 +42,7 @@ var lastpokestops
 var lastgyms
 var lastpokemon
 var lastslocs
+var lastspawns
 
 var selectedStyle = 'light'
 
@@ -885,6 +886,7 @@ function loadRawData () {
       'scanned': loadScanned,
       'lastslocs': lastslocs,
       'spawnpoints': loadSpawnpoints,
+      'lastspawns': lastspawns,
       'swLat': swLat,
       'swLng': swLng,
       'neLat': neLat,
@@ -1070,6 +1072,7 @@ function updateMap () {
     lastpokestops = result.lastpokestops
     lastpokemon = result.lastpokemon
     lastslocs = result.lastslocs
+    lastspawns = result.lastspawns
 
     timestamp = result.timestamp
     lastUpdateTime = Date.now()
@@ -1572,6 +1575,12 @@ $(function () {
         if (storageKey === 'showPokestops') {
           lastpokestops = false
         }
+        if (storageKey === 'showScanned') {
+          lastslocs = false
+        }
+        if (storageKey === 'showSpawnpoints') {
+          lastspawns = false
+        }
 
         updateMap()
       } else {
@@ -1595,15 +1604,12 @@ $(function () {
 
   // Setup UI element interactions
   $('#gyms-switch').change(function () {
-    lastgyms = false
     buildSwitchChangeListener(mapData, ['gyms'], 'showGyms').bind(this)()
   })
   $('#pokemon-switch').change(function () {
-    lastpokemon = false
     buildSwitchChangeListener(mapData, ['pokemons'], 'showPokemon').bind(this)()
   })
   $('#scanned-switch').change(function () {
-    lastslocs = false
     buildSwitchChangeListener(mapData, ['scanned'], 'showScanned').bind(this)()
   })
   $('#spawnpoints-switch').change(function () {
@@ -1612,7 +1618,6 @@ $(function () {
   $('#ranges-switch').change(buildSwitchChangeListener(mapData, ['gyms', 'pokemons', 'pokestops'], 'showRanges'))
 
   $('#pokestops-switch').change(function () {
-    lastpokestops = false
     var options = {
       'duration': 500
     }

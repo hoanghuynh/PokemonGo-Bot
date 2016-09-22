@@ -101,10 +101,14 @@ class Pogom(Flask):
         lastgyms = request.args.get('lastgyms')
         lastpokestops = request.args.get('lastpokestops')
         lastpokemon = request.args.get('lastpokemon')
+        lastslocs = request.args.get('lastslocs')
+        lastspawns = request.args.get('lastspawns')
 
         d['lastgyms'] = request.args.get('gyms', 'true')
         d['lastpokestops'] = request.args.get('pokestops', 'true')
         d['lastpokemon'] = request.args.get('pokemon', 'true')
+        d['lastslocs'] = request.args.get('scanned', 'true')
+        d['lastspawns'] = request.args.get('spawnpoints', 'false')
 
         # If old coords are not equal to current coords we have moved/zoomed!
         if not (oSwLat == swLat and oSwLng == swLng and oNeLat == neLat and oNeLng == neLng):
@@ -151,7 +155,12 @@ class Pogom(Flask):
                     d['gyms'].update(Gym.get_gyms(swLat, swLng, neLat, neLng, oSwLat=oSwLat, oSwLng=oSwLng, oNeLat=oNeLat, oNeLng=oNeLng))
 
         if request.args.get('scanned', 'true') == 'true':
-            d['scanned'] = ScannedLocation.get_recent(swLat, swLng, neLat, neLng)
+            if lastslocs != 'true':
+                d['scanned'] = ScannedLocation.get_recent(swLat, swLng, neLat, neLng)
+            else:
+                d['scanned'] = ScannedLocation.get_recent(swLat, swLng, neLat, neLng, timestamp=prevtime)
+                if newArea:
+                    d['scanned'] = d['scanned'] + (ScannedLocation.get_recent(swLat, swLng, neLat, neLng, oSwLat=oSwLat, oSwLng=oSwLng, oNeLat=oNeLat, oNeLng=oNeLng))
 
         selected_duration = None
 
@@ -173,7 +182,12 @@ class Pogom(Flask):
                                                                                 selected_duration)
 
         if request.args.get('spawnpoints', 'false') == 'true':
-            d['spawnpoints'] = Pokemon.get_spawnpoints(swLat, swLng, neLat, neLng)
+            if lastspawns != 'true':
+                d['spawnpoints'] = Pokemon.get_spawnpoints(swLat=swLat, swLng=swLng, neLat=neLat, neLng=neLng)
+            else:
+                d['spawnpoints'] = Pokemon.get_spawnpoints(swLat=swLat, swLng=swLng, neLat=neLat, neLng=neLng, timestamp=prevtime)
+                if newArea:
+                    d['spawnpoints'] = d['spawnpoints'] + (Pokemon.get_spawnpoints(swLat, swLng, neLat, neLng, oSwLat=oSwLat, oSwLng=oSwLng, oNeLat=oNeLat, oNeLng=oNeLng))
 
         if request.args.get('status', 'false') == 'true':
             args = get_args()

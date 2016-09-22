@@ -272,15 +272,34 @@ class Pokemon(BaseModel):
         return (disappear_time + 2700) % 3600
 
     @classmethod
-    def get_spawnpoints(cls, southBoundary, westBoundary, northBoundary, eastBoundary):
+    def get_spawnpoints(cls, swLat, swLng, neLat, neLng, timestamp=0, oSwLat=None, oSwLng=None, oNeLat=None, oNeLng=None):
         query = Pokemon.select(Pokemon.latitude, Pokemon.longitude, Pokemon.spawnpoint_id, ((Pokemon.disappear_time.minute * 60) + Pokemon.disappear_time.second).alias('time'), fn.Count(Pokemon.spawnpoint_id).alias('count'))
 
-        if None not in (northBoundary, southBoundary, westBoundary, eastBoundary):
+        if timestamp > 0:
             query = (query
-                     .where((Pokemon.latitude <= northBoundary) &
-                            (Pokemon.latitude >= southBoundary) &
-                            (Pokemon.longitude >= westBoundary) &
-                            (Pokemon.longitude <= eastBoundary)
+                     .where(((Pokemon.last_modified > datetime.utcfromtimestamp(timestamp / 1000))) &
+                            ((Pokemon.latitude >= swLat) &
+                             (Pokemon.longitude >= swLng) &
+                             (Pokemon.latitude <= neLat) &
+                             (Pokemon.longitude <= neLng)))
+                     .dicts())
+        elif oSwLat and oSwLng and oNeLat and oNeLng:
+            query = (query
+                     .where((((Pokemon.latitude >= swLat) &
+                              (Pokemon.longitude >= swLng) &
+                              (Pokemon.latitude <= neLat) &
+                              (Pokemon.longitude <= neLng))) &
+                            ~((Pokemon.latitude >= oSwLat) &
+                              (Pokemon.longitude >= oSwLng) &
+                              (Pokemon.latitude <= oNeLat) &
+                              (Pokemon.longitude <= oNeLng)))
+                     .dicts())
+        else:
+            query = (query
+                     .where((Pokemon.latitude <= neLat) &
+                            (Pokemon.latitude >= swLat) &
+                            (Pokemon.longitude >= swLng) &
+                            (Pokemon.longitude <= neLng)
                             ))
 
         query = query.group_by(Pokemon.latitude, Pokemon.longitude, Pokemon.spawnpoint_id, SQL('time'))
@@ -530,17 +549,41 @@ class ScannedLocation(BaseModel):
         primary_key = CompositeKey('latitude', 'longitude')
 
     @staticmethod
-    def get_recent(swLat, swLng, neLat, neLng):
-        query = (ScannedLocation
-                 .select()
-                 .where((ScannedLocation.last_modified >=
-                        (datetime.utcnow() - timedelta(minutes=15))) &
-                        (ScannedLocation.latitude >= swLat) &
-                        (ScannedLocation.longitude >= swLng) &
-                        (ScannedLocation.latitude <= neLat) &
-                        (ScannedLocation.longitude <= neLng))
-                 .order_by(ScannedLocation.last_modified.asc())
-                 .dicts())
+    def get_recent(swLat, swLng, neLat, neLng, timestamp=0, oSwLat=None, oSwLng=None, oNeLat=None, oNeLng=None):
+        activeTime = (datetime.utcnow() - timedelta(minutes=15))
+        if timestamp > 0:
+            query = (ScannedLocation
+                     .select()
+                     .where(((ScannedLocation.last_modified >= datetime.utcfromtimestamp(timestamp / 1000))) &
+                            (ScannedLocation.latitude >= swLat) &
+                            (ScannedLocation.longitude >= swLng) &
+                            (ScannedLocation.latitudE <= neLat) &
+                            (ScannedLocation.longitude <= neLng))
+                     .dicts())
+        elif oSwLat and oSwLng and oNeLat and oNeLng:
+            query = (ScannedLocation
+                     .select()
+                     .where((((ScannedLocation.last_modified >= activeTime)) &
+                             (ScannedLocation.latitude >= swLat) &
+                             (ScannedLocation.longitude >= swLng) &
+                             (ScannedLocation.latitude <= neLat) &
+                             (ScannedLocation.longitude <= neLng)) &
+                            ~(((ScannedLocation.last_modified >= activeTime)) &
+                              (ScannedLocation.latitude >= oSwLat) &
+                              (ScannedLocation.longitude >= oSwLng) &
+                              (ScannedLocation.latitude <= oNeLat) &
+                              (ScannedLocation.longitude <= oNeLng)))
+                     .dicts())
+        else:
+            query = (ScannedLocation
+                     .select()
+                     .where((ScannedLocation.last_modified >= activeTime) &
+                            (ScannedLocation.latitude >= swLat) &
+                            (ScannedLocation.longitude >= swLng) &
+                            (ScannedLocation.latitude <= neLat) &
+                            (ScannedLocation.longitude <= neLng))
+                     .order_by(ScannedLocation.last_modified.asc())
+                     .dicts())
 
         return list(query)
 
