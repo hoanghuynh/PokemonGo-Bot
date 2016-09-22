@@ -84,45 +84,39 @@ class Pogom(Flask):
         neLat = request.args.get('neLat')
         neLng = request.args.get('neLng')
 
-        prevtime = 0
-        if request.args.get('timestamp') > 1:
-            prevtime = int(float(request.args.get('timestamp')))
-            d['prevstamp'] = prevtime
-        timestamp = datetime.utcnow()
-        d['timestamp'] = timestamp
-
-        lastgyms = request.args.get('lastgyms')
-        lastpokestops = request.args.get('lastpokestops')
-        lastpokemon = request.args.get('lastpokemon')
-        # lastslocs = request.args.get('lastslocs')
-
-        d['lastgyms'] = request.args.get('gyms', 'true')
-        d['lastpokestops'] = request.args.get('pokestops', 'true')
-        d['lastpokemon'] = request.args.get('pokemon', 'true')
-
-        newArea = False
         oSwLat = request.args.get('oSwLat')
         oSwLng = request.args.get('oSwLng')
         oNeLat = request.args.get('oNeLat')
         oNeLng = request.args.get('oNeLng')
 
-        d['oSwLat'] = oSwLat
-        d['oSwLng'] = oSwLng
-        d['oNeLat'] = oNeLat
-        d['oNeLng'] = oNeLng
+        if request.args.get('timestamp'):
+            prevtime = int(float(request.args.get('timestamp')))
+        else:
+            prevtime = 0
 
-        if oSwLat != swLat:
-            d['oSwLat'] = swLat
+        timestamp = datetime.utcnow()
+        d['prevstamp'] = prevtime
+        d['timestamp'] = timestamp
+
+        lastgyms = request.args.get('lastgyms')
+        lastpokestops = request.args.get('lastpokestops')
+        lastpokemon = request.args.get('lastpokemon')
+
+        d['lastgyms'] = request.args.get('gyms', 'true')
+        d['lastpokestops'] = request.args.get('pokestops', 'true')
+        d['lastpokemon'] = request.args.get('pokemon', 'true')
+
+        # If old coords are not equal to current coords we have moved/zoomed!
+        if not (oSwLat == swLat and oSwLng == swLng and oNeLat == neLat and oNeLng == neLng):
             newArea = True
-        if oSwLng != swLng:
-            d['oSwLng'] = swLng
-            newArea = True
-        if oNeLat != neLat:
-            d['oNeLat'] = neLat
-            newArea = True
-        if oNeLng != neLng:
-            d['oNeLng'] = neLng
-            newArea = True
+        else:
+            newArea = False
+
+        # Pass current coords as old coords.
+        d['oSwLat'] = swLat
+        d['oSwLng'] = swLng
+        d['oNeLat'] = neLat
+        d['oNeLng'] = neLng
 
         if request.args.get('pokemon', 'true') == 'true':
             if request.args.get('ids'):
