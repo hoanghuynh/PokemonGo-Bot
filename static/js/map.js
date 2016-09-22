@@ -1541,6 +1541,16 @@ $(function () {
     return function () {
       Store.set(storageKey, this.checked)
       if (this.checked) {
+        if (storageKey === 'showPokemon') {
+          lastpokemon = false
+        }
+        if (storageKey === 'showGyms') {
+          lastgyms = false
+        }
+        if (storageKey === 'showPokestops') {
+          lastpokestops = false
+        }
+
         updateMap()
       } else {
         $.each(dataType, function (d, dType) {
