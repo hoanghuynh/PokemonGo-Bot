@@ -557,7 +557,7 @@ class ScannedLocation(BaseModel):
                      .where(((ScannedLocation.last_modified >= datetime.utcfromtimestamp(timestamp / 1000))) &
                             (ScannedLocation.latitude >= swLat) &
                             (ScannedLocation.longitude >= swLng) &
-                            (ScannedLocation.latitudE <= neLat) &
+                            (ScannedLocation.latitude <= neLat) &
                             (ScannedLocation.longitude <= neLng))
                      .dicts())
         elif oSwLat and oSwLng and oNeLat and oNeLng:

@@ -1568,17 +1568,13 @@ $(function () {
       if (this.checked) {
         if (storageKey === 'showPokemon') {
           lastpokemon = false
-        }
-        if (storageKey === 'showGyms') {
+        } else if (storageKey === 'showGyms') {
           lastgyms = false
-        }
-        if (storageKey === 'showPokestops') {
+        } else if (storageKey === 'showPokestops') {
           lastpokestops = false
-        }
-        if (storageKey === 'showScanned') {
+        } else if (storageKey === 'showScanned') {
           lastslocs = false
-        }
-        if (storageKey === 'showSpawnpoints') {
+        } else if (storageKey === 'showSpawnpoints') {
           lastspawns = false
         }
 
