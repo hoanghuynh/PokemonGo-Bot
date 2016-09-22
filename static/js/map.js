@@ -1005,9 +1005,11 @@ function updateScanned () {
   }
 
   $.each(mapData.scanned, function (key, value) {
-    value.marker.setOptions({
-      fillColor: getColorByDate(value['last_modified'])
-    })
+    if (map.getBounds().intersects(value.marker.getBounds())) {
+      value.marker.setOptions({
+        fillColor: getColorByDate(value['last_modified'])
+      })
+    }
   })
 }
 
@@ -1035,9 +1037,11 @@ function updateSpawnPoints () {
   var zoom = map.getZoom()
 
   $.each(mapData.spawnpoints, function (key, value) {
-    var hue = getColorBySpawnTime(value['time'])
-    value.marker.setIcon(changeSpawnIcon(hue, zoom))
-    value.marker.setZIndex(spawnPointIndex(hue))
+    if (map.getBounds().contains(value.marker.getPosition())) {
+      var hue = getColorBySpawnTime(value['time'])
+      value.marker.setIcon(changeSpawnIcon(hue, zoom))
+      value.marker.setZIndex(spawnPointIndex(hue))
+    }
   })
 }
 
@@ -1048,8 +1052,6 @@ function updateMap () {
     $.each(result.gyms, processGyms)
     $.each(result.scanned, processScanned)
     $.each(result.spawnpoints, processSpawnpoints)
-    updateScanned()
-    updateSpawnPoints()
     showInBoundsMarkers(mapData.pokemons, 'pokemon')
     showInBoundsMarkers(mapData.lurePokemons, 'pokemon')
     showInBoundsMarkers(mapData.gyms, 'gym')
@@ -1058,6 +1060,9 @@ function updateMap () {
     showInBoundsMarkers(mapData.spawnpoints, 'inbound')
 //    drawScanPath(result.scanned);
     clearStaleMarkers()
+
+    updateScanned()
+    updateSpawnPoints()
 
     if ($('#stats').hasClass('visible')) {
       countMarkers()
