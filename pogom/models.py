@@ -96,6 +96,7 @@ class Pokemon(BaseModel):
                      .where(Pokemon.disappear_time > datetime.utcnow())
                      .dicts())
         elif timestamp > 0:
+            # If timestamp is known only load modified pokemon
             query = (Pokemon
                      .select()
                      .where(((Pokemon.last_modified > datetime.utcfromtimestamp(timestamp / 1000)) &
@@ -106,6 +107,7 @@ class Pokemon(BaseModel):
                              (Pokemon.longitude <= neLng)))
                      .dicts())
         elif oSwLat and oSwLng and oNeLat and oNeLng:
+            # Send Pokemon in view but exclude those within old boundaries. Only send newly uncovered Pokemon.
             query = (Pokemon
                      .select()
                      .where(((Pokemon.disappear_time > datetime.utcnow()) &
@@ -284,6 +286,7 @@ class Pokemon(BaseModel):
                              (Pokemon.longitude <= neLng)))
                      .dicts())
         elif oSwLat and oSwLng and oNeLat and oNeLng:
+            # Send spawnpoints in view but exclude those within old boundaries. Only send newly uncovered spawnpoints.
             query = (query
                      .where((((Pokemon.latitude >= swLat) &
                               (Pokemon.longitude >= swLng) &
@@ -401,6 +404,7 @@ class Pokestop(BaseModel):
                             (Pokestop.longitude <= neLng))
                      .dicts())
         elif oSwLat and oSwLng and oNeLat and oNeLng:
+            # Send stops in view but exclude those within old boundaries. Only send newly uncovered stops.
             query = (Pokestop
                      .select()
                      .where(((Pokestop.latitude >= swLat) &
@@ -463,6 +467,7 @@ class Gym(BaseModel):
                        .select()
                        .dicts())
         elif timestamp > 0:
+            # If timestamp is known only send last scanned Gyms.
             results = (Gym
                        .select()
                        .where(((Gym.last_scanned > datetime.utcfromtimestamp(timestamp / 1000)) &
@@ -472,6 +477,7 @@ class Gym(BaseModel):
                               (Gym.longitude <= neLng)))
                        .dicts())
         elif oSwLat and oSwLng and oNeLat and oNeLng:
+            # Send gyms in view but exclude those within old boundaries. Only send newly uncovered gyms.
             results = (Gym
                        .select()
                        .where(((Gym.latitude >= swLat) &
@@ -561,6 +567,7 @@ class ScannedLocation(BaseModel):
                             (ScannedLocation.longitude <= neLng))
                      .dicts())
         elif oSwLat and oSwLng and oNeLat and oNeLng:
+            # Send scannedlocations in view but exclude those within old boundaries. Only send newly uncovered scannedlocations.
             query = (ScannedLocation
                      .select()
                      .where((((ScannedLocation.last_modified >= activeTime)) &
@@ -698,14 +705,17 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue):
             if len(wild_pokemon) > 0:
                 encounter_ids = [b64encode(str(p['encounter_id'])) for p in wild_pokemon]
 
+                # For all the wild pokemon we found check if an active pokemon is in the database
                 query = (Pokemon
                          .select()
                          .where((Pokemon.disappear_time > datetime.utcnow()) & (Pokemon.encounter_id << encounter_ids))
                          .dicts())
 
+                # Store all encounter_ids and spawnpoint_id for the pokemon in query (all thats needed to make sure its unique)
                 encountered_pokemon = [(p['encounter_id'], p['spawnpoint_id']) for p in query]
             for p in wild_pokemon:
                 if (b64encode(str(p['encounter_id'])), p['spawn_point_id']) in encountered_pokemon:
+                    # If pokemon has been encountered before dont process it.
                     skipped += 1
                     continue
 

@@ -1571,6 +1571,8 @@ $(function () {
     return function () {
       Store.set(storageKey, this.checked)
       if (this.checked) {
+        // When switch is turned on we asume it has been off, makes sure we dont end up in limbo
+        // Without this there could've been a situation where no markers are on map and only newly modified ones are loaded
         if (storageKey === 'showPokemon') {
           lastpokemon = false
         } else if (storageKey === 'showGyms') {

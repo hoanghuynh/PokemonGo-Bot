@@ -89,19 +89,23 @@ class Pogom(Flask):
         oNeLat = request.args.get('oNeLat')
         oNeLng = request.args.get('oNeLng')
 
+        # Request time of previous request
         if request.args.get('timestamp'):
             timestamp = int(float(request.args.get('timestamp')))
         else:
             timestamp = 0
 
+        # Request time of this request
         d['timestamp'] = datetime.utcnow()
 
+        # Previous switch settings
         lastgyms = request.args.get('lastgyms')
         lastpokestops = request.args.get('lastpokestops')
         lastpokemon = request.args.get('lastpokemon')
         lastslocs = request.args.get('lastslocs')
         lastspawns = request.args.get('lastspawns')
 
+        # Current switch settings saved for next request
         d['lastgyms'] = request.args.get('gyms', 'true')
         d['lastpokestops'] = request.args.get('pokestops', 'true')
         d['lastpokemon'] = request.args.get('pokemon', 'true')
@@ -128,13 +132,17 @@ class Pogom(Flask):
                 d['pokemons'] = Pokemon.get_active_by_id(ids, swLat, swLng,
                                                          neLat, neLng)
             elif lastpokemon != 'true':
+                # If this is first request since switch on, load all pokemon on screen.
                 d['pokemons'] = Pokemon.get_active(swLat, swLng, neLat, neLng)
             else:
+                # If map is already populated only request modified Pokemon since last request time
                 d['pokemons'] = Pokemon.get_active(swLat, swLng, neLat, neLng, timestamp=timestamp)
                 if newArea:
+                    # If screen is moved add newly uncovered Pokemon to the ones that were modified since last request time
                     d['pokemons'] = d['pokemons'] + (Pokemon.get_active(swLat, swLng, neLat, neLng, oSwLat=oSwLat, oSwLng=oSwLng, oNeLat=oNeLat, oNeLng=oNeLng))
 
             if request.args.get('eids'):
+                # Exclude id's of pokemon that are hidden
                 eids = [int(x) for x in request.args.get('eids').split(',')]
                 d['pokemons'] = [x for x in d['pokemons'] if x['pokemon_id'] not in eids]
 
