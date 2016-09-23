@@ -109,7 +109,9 @@ class Pogom(Flask):
         d['lastspawns'] = request.args.get('spawnpoints', 'false')
 
         # If old coords are not equal to current coords we have moved/zoomed!
-        if not (oSwLat == swLat and oSwLng == swLng and oNeLat == neLat and oNeLng == neLng):
+        if oSwLng < swLng and oSwLat < swLat and oNeLat > neLat and oNeLng > neLng:
+            newArea = False  # We zoomed in no new area uncovered
+        elif not (oSwLat == swLat and oSwLng == swLng and oNeLat == neLat and oNeLng == neLng):
             newArea = True
         else:
             newArea = False
