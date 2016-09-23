@@ -294,7 +294,7 @@ class Pokemon(BaseModel):
                               (Pokemon.latitude <= oNeLat) &
                               (Pokemon.longitude <= oNeLng)))
                      .dicts())
-        else:
+        elif swLat and swLng and neLat and neLng:
             query = (query
                      .where((Pokemon.latitude <= neLat) &
                             (Pokemon.latitude >= swLat) &
