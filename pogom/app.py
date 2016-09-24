@@ -92,6 +92,7 @@ class Pogom(Flask):
         # Request time of previous request
         if request.args.get('timestamp'):
             timestamp = int(float(request.args.get('timestamp')))
+            timestamp -= 5000  # Needed some overlap, 5 seconds should be safe
         else:
             timestamp = 0
 
