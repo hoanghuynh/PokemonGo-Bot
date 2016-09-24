@@ -83,7 +83,7 @@ class Pokemon(BaseModel):
     latitude = DoubleField()
     longitude = DoubleField()
     disappear_time = DateTimeField(index=True)
-    last_modified = DateTimeField(index=True)
+    last_modified = DateTimeField(null=True, index=True, default=datetime.utcnow)
 
     class Meta:
         indexes = ((('latitude', 'longitude'), False),)
@@ -737,8 +737,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue):
                     'pokemon_id': p['pokemon_data']['pokemon_id'],
                     'latitude': p['latitude'],
                     'longitude': p['longitude'],
-                    'disappear_time': d_t,
-                    'last_modified': datetime.utcnow()
+                    'disappear_time': d_t
                 }
 
                 if args.webhooks:
@@ -1150,5 +1149,5 @@ def database_migrate(db, old_ver):
 
     if old_ver < 8:
         migrate(
-            migrator.add_column('pokemon', 'last_modified', DateTimeField(null=True, index=True, default=None))
+            migrator.add_column('pokemon', 'last_modified', DateTimeField(null=True, index=True, default=datetime.utcnow))
         )
