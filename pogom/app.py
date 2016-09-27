@@ -85,8 +85,8 @@ class Pogom(Flask):
 
         # Request time of previous request
         if request.args.get('timestamp'):
-            timestamp = float(request.args.get('timestamp'))
-            timestamp -= 5000  # Overlap
+            timestamp = int(request.args.get('timestamp'))
+            timestamp -= 1000  # Overlap, for rounding errors.
         else:
             timestamp = 0
 
@@ -108,11 +108,20 @@ class Pogom(Flask):
         lastspawns = request.args.get('lastspawns')
 
         # Current switch settings saved for next request
-        d['lastgyms'] = request.args.get('gyms', 'true')
-        d['lastpokestops'] = request.args.get('pokestops', 'true')
-        d['lastpokemon'] = request.args.get('pokemon', 'true')
-        d['lastslocs'] = request.args.get('scanned', 'true')
-        d['lastspawns'] = request.args.get('spawnpoints', 'false')
+        if request.args.get('gyms', 'true') == 'true':
+            d['lastgyms'] = request.args.get('gyms', 'true')
+
+        if request.args.get('pokestops', 'true') == 'true':
+            d['lastpokestops'] = request.args.get('pokestops', 'true')
+
+        if request.args.get('pokemon', 'true') == 'true':
+            d['lastpokemon'] = request.args.get('pokemon', 'true')
+
+        if request.args.get('scanned', 'true') == 'true':
+            d['lastslocs'] = request.args.get('scanned', 'true')
+
+        if request.args.get('spawnpoints', 'false') == 'true':
+            d['lastspawns'] = request.args.get('spawnpoints', 'false')
 
         # If old coords are not equal to current coords we have moved/zoomed!
         if oSwLng < swLng and oSwLat < swLat and oNeLat > neLat and oNeLng > neLng:
