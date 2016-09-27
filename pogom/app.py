@@ -107,6 +107,11 @@ class Pogom(Flask):
         lastslocs = request.args.get('lastslocs')
         lastspawns = request.args.get('lastspawns')
 
+        if request.args.get('luredonly', 'true') == 'true':
+            luredonly = True
+        else:
+            luredonly = False
+
         # Current switch settings saved for next request
         if request.args.get('gyms', 'true') == 'true':
             d['lastgyms'] = request.args.get('gyms', 'true')
@@ -157,13 +162,18 @@ class Pogom(Flask):
                 eids = [int(x) for x in request.args.get('eids').split(',')]
                 d['pokemons'] = [x for x in d['pokemons'] if x['pokemon_id'] not in eids]
 
+            if request.args.get('reids'):
+                reids = [int(x) for x in request.args.get('reids').split(',')]
+                d['pokemons'] = d['pokemons'] + (Pokemon.get_active_by_id(reids, swLat, swLng, neLat, neLng))
+                d['reids'] = reids
+
         if request.args.get('pokestops', 'true') == 'true':
             if lastpokestops != 'true':
-                d['pokestops'] = Pokestop.get_stops(swLat, swLng, neLat, neLng)
+                d['pokestops'] = Pokestop.get_stops(swLat, swLng, neLat, neLng, lured=luredonly)
             else:
                 d['pokestops'] = Pokestop.get_stops(swLat, swLng, neLat, neLng, timestamp=timestamp)
                 if newArea:
-                    d['pokestops'] = d['pokestops'] + (Pokestop.get_stops(swLat, swLng, neLat, neLng, oSwLat=oSwLat, oSwLng=oSwLng, oNeLat=oNeLat, oNeLng=oNeLng))
+                    d['pokestops'] = d['pokestops'] + (Pokestop.get_stops(swLat, swLng, neLat, neLng, oSwLat=oSwLat, oSwLng=oSwLng, oNeLat=oNeLat, oNeLng=oNeLng, lured=luredonly))
 
         if request.args.get('gyms', 'true') == 'true':
             if lastgyms != 'true':

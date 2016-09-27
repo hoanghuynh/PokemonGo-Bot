@@ -25,6 +25,11 @@ var excludedPokemon = []
 var notifiedPokemon = []
 var notifiedRarity = []
 
+var buffer = []
+var reincludedPokemon = []
+var reids = []
+
+
 var map
 var rawDataIsLoading = false
 var locationMarker
@@ -863,6 +868,7 @@ function loadRawData () {
   var loadPokestops = Store.get('showPokestops')
   var loadScanned = Store.get('showScanned')
   var loadSpawnpoints = Store.get('showSpawnpoints')
+  var loadLuredOnly = Boolean(Store.get('showLuredPokestopsOnly'))
 
   var bounds = map.getBounds()
   var swPoint = bounds.getSouthWest()
@@ -881,6 +887,7 @@ function loadRawData () {
       'lastpokemon': lastpokemon,
       'pokestops': loadPokestops,
       'lastpokestops': lastpokestops,
+      'luredonly': loadLuredOnly,
       'gyms': loadGyms,
       'lastgyms': lastgyms,
       'scanned': loadScanned,
@@ -895,6 +902,7 @@ function loadRawData () {
       'oSwLng': oSwLng,
       'oNeLat': oNeLat,
       'oNeLng': oNeLng,
+      'reids': String(reincludedPokemon),
       'eids': String(excludedPokemon)
     },
     dataType: 'json',
@@ -1111,6 +1119,10 @@ function updateMap () {
     lastslocs = result.lastslocs
     lastspawns = result.lastspawns
 
+    reids = result.reids
+    if (reids instanceof Array) {
+      reincludedPokemon = reids.filter(function (e) { return this.indexOf(e) < 0 }, reincludedPokemon)
+    }
     timestamp = result.timestamp
     lastUpdateTime = Date.now()
   })
@@ -1568,7 +1580,10 @@ $(function () {
 
     // setup list change behavior now that we have the list to work from
     $selectExclude.on('change', function (e) {
+      buffer = excludedPokemon
       excludedPokemon = $selectExclude.val().map(Number)
+      buffer = buffer.filter(function (e) { return this.indexOf(e) < 0 }, excludedPokemon)
+      reincludedPokemon = reincludedPokemon.concat(buffer)
       clearStaleMarkers()
       Store.set('remember_select_exclude', excludedPokemon)
     })
@@ -1658,8 +1673,10 @@ $(function () {
     }
     var wrapper = $('#lured-pokestops-only-wrapper')
     if (this.checked) {
+      lastpokestops = false
       wrapper.show(options)
     } else {
+      lastpokestops = false
       wrapper.hide(options)
     }
     return buildSwitchChangeListener(mapData, ['pokestops'], 'showPokestops').bind(this)()

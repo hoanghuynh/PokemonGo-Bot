@@ -387,7 +387,7 @@ class Pokestop(BaseModel):
         indexes = ((('latitude', 'longitude'), False),)
 
     @staticmethod
-    def get_stops(swLat, swLng, neLat, neLng, timestamp=0, oSwLat=None, oSwLng=None, oNeLat=None, oNeLng=None):
+    def get_stops(swLat, swLng, neLat, neLng, timestamp=0, oSwLat=None, oSwLng=None, oNeLat=None, oNeLng=None, lured=False):
 
         query = Pokestop.select(Pokestop.active_fort_modifier, Pokestop.enabled, Pokestop.latitude, Pokestop.longitude, Pokestop.last_modified, Pokestop.lure_expiration, Pokestop.pokestop_id)
 
@@ -402,6 +402,19 @@ class Pokestop(BaseModel):
                             (Pokestop.latitude <= neLat) &
                             (Pokestop.longitude <= neLng))
                      .dicts())
+        elif oSwLat and oSwLng and oNeLat and oNeLng and lured:
+            query = (query
+                     .where((((Pokestop.latitude >= swLat) &
+                              (Pokestop.longitude >= swLng) &
+                              (Pokestop.latitude <= neLat) &
+                              (Pokestop.longitude <= neLng)) &
+                             (Pokestop.active_fort_modifier.is_null(False))) &
+                            ~((Pokestop.latitude >= oSwLat) &
+                              (Pokestop.longitude >= oSwLng) &
+                              (Pokestop.latitude <= oNeLat) &
+                              (Pokestop.longitude <= oNeLng)) &
+                             (Pokestop.active_fort_modifier.is_null(False)))
+                     .dicts())
         elif oSwLat and oSwLng and oNeLat and oNeLng:
             # Send stops in view but exclude those within old boundaries. Only send newly uncovered stops.
             query = (query
@@ -414,6 +427,16 @@ class Pokestop(BaseModel):
                               (Pokestop.latitude <= oNeLat) &
                               (Pokestop.longitude <= oNeLng)))
                      .dicts())
+        elif lured:
+            query = (query
+                     .where(((Pokestop.last_updated > datetime.utcfromtimestamp(timestamp / 1000))) &
+                            ((Pokestop.latitude >= swLat) &
+                             (Pokestop.longitude >= swLng) &
+                             (Pokestop.latitude <= neLat) &
+                             (Pokestop.longitude <= neLng)) &
+                            (Pokestop.active_fort_modifier.is_null(False)))
+                     .dicts())
+
         else:
             query = (query
                      .where((Pokestop.latitude >= swLat) &
