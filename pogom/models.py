@@ -873,8 +873,8 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue):
              len(gyms))
 
     log.debug('Skipped %d Pokemons and %d pokestops.',
-             skipped,
-             stopsskipped)
+              skipped,
+              stopsskipped)
 
     db_update_queue.put((ScannedLocation, {0: {
         'latitude': step_location[0],
