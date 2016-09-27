@@ -937,18 +937,10 @@ function processPokestops (i, item) {
   }
 
   if (Store.get('showLuredPokestopsOnly') && !item['lure_expiration']) {
-    if (mapData.pokestops[item['pokestop_id']] && mapData.pokestops[item['pokestop_id']].marker) {
-      if (mapData.pokestops[item['pokestop_id']].marker.rangeCircle) {
-        mapData.pokestops[item['pokestop_id']].marker.rangeCircle.setMap(null)
-      }
-      mapData.pokestops[item['pokestop_id']].marker.setMap(null)
-      delete mapData.pokestops[item['pokestop_id']]
-    }
     return true
   }
 
-  if (!mapData.pokestops[item['pokestop_id']]) { // add marker to map and item to dict
-    // add marker to map and item to dict
+  if (!mapData.pokestops[item['pokestop_id']]) { // new pokestop, add marker to map and item to dict
     if (item.marker && item.marker.rangeCircle) {
       item.marker.rangeCircle.setMap(null)
     }
@@ -957,7 +949,7 @@ function processPokestops (i, item) {
     }
     item.marker = setupPokestopMarker(item)
     mapData.pokestops[item['pokestop_id']] = item
-  } else {
+  } else {  // change existing pokestop marker to unlured/lured
     var item2 = mapData.pokestops[item['pokestop_id']]
     if (!!item['lure_expiration'] !== !!item2['lure_expiration']) {
       if (item2.marker && item2.marker.rangeCircle) {
@@ -967,6 +959,45 @@ function processPokestops (i, item) {
       item.marker = setupPokestopMarker(item)
       mapData.pokestops[item['pokestop_id']] = item
     }
+  }
+}
+
+function updatePokestops () {
+  if (!Store.get('showPokestops')) {
+    return false
+  }
+
+  var removeStops = []
+  var currentTime = new Date().getTime()
+
+  // change lured pokestop marker to unlured when expired
+  $.each(mapData.pokestops, function (key, value) {
+    if (value['lure_expiration'] && value['lure_expiration'] < currentTime) {
+      value['lure_expiration'] = null
+      if (value.marker && value.marker.rangeCircle) {
+        value.marker.rangeCircle.setMap(null)
+      }
+      value.marker.setMap(null)
+      value.marker = setupPokestopMarker(value)
+    }
+  })
+
+  // remove unlured stops if show lured only is selected
+  if (Store.get('showLuredPokestopsOnly')) {
+    $.each(mapData.pokestops, function (key, value) {
+      if (!value['lure_expiration']) {
+        removeStops.push(key)
+      }
+    })
+    $.each(removeStops, function (key, value) {
+      if (mapData.pokestops[value] && mapData.pokestops[value].marker) {
+        if (mapData.pokestops[value].marker.rangeCircle) {
+          mapData.pokestops[value].marker.rangeCircle.setMap(null)
+        }
+        mapData.pokestops[value].marker.setMap(null)
+        delete mapData.pokestops[value]
+      }
+    })
   }
 }
 
@@ -1063,6 +1094,7 @@ function updateMap () {
 
     updateScanned()
     updateSpawnPoints()
+    updatePokestops()
 
     if ($('#stats').hasClass('visible')) {
       countMarkers()
