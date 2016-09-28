@@ -1307,7 +1307,7 @@ def database_migrate(db, old_ver):
             migrator.add_column('pokemon', 'individual_defense', IntegerField(null=True, default=0)),
             migrator.add_column('pokemon', 'individual_stamina', IntegerField(null=True, default=0)),
             migrator.add_column('pokemon', 'move_1', IntegerField(null=True, default=0)),
-            migrator.add_column('pokemon', 'move_2', IntegerField(null=True, default=0))
+            migrator.add_column('pokemon', 'move_2', IntegerField(null=True, default=0)),
             migrator.add_column('pokemon', 'last_modified', DateTimeField(null=True, index=True)),
             migrator.add_column('pokestop', 'last_updated', DateTimeField(null=True, index=True))
         )
