@@ -816,8 +816,9 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, a
                                                      player_longitude=step_location[1])
                 construct_pokemon_dict(pokemons, p, encounter_result, d_t)
 
-                if args.webhooks:
-                    wh_update_queue.put(('pokemon', {
+                # Parse only if Pokemon not in Ignore list
+                if p['pokemon_data']['pokemon_id'] not in args.ignore_list:
+                    pokemons[p['encounter_id']] = {
                         'encounter_id': b64encode(str(p['encounter_id'])),
                         'spawnpoint_id': p['spawn_point_id'],
                         'pokemon_id': p['pokemon_data']['pokemon_id'],
@@ -831,7 +832,18 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, a
                         'individual_stamina': pokemons[p['encounter_id']]['individual_stamina'],
                         'move_1': pokemons[p['encounter_id']]['move_1'],
                         'move_2': pokemons[p['encounter_id']]['move_2']
-                    }))
+                    }
+                    if args.webhooks:
+                        wh_update_queue.put(('pokemon', {
+                            'encounter_id': b64encode(str(p['encounter_id'])),
+                            'spawnpoint_id': p['spawn_point_id'],
+                            'pokemon_id': p['pokemon_data']['pokemon_id'],
+                            'latitude': p['latitude'],
+                            'longitude': p['longitude'],
+                            'disappear_time': calendar.timegm(d_t.timetuple()),
+                            'last_modified_time': p['last_modified_timestamp_ms'],
+                            'time_until_hidden_ms': p['time_till_hidden_ms']
+                        }))
     if pokesfound:
         encounter_ids = [b64encode(str(p['encounter_id'])) for p in wild_pokemon]
         # For all the wild pokemon we found check if an active pokemon is in the database
