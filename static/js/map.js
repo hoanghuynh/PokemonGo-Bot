@@ -926,7 +926,7 @@ function processPokemons (i, item) {
   }
 
   if (!(item['encounter_id'] in mapData.pokemons) &&
-    excludedPokemon.indexOf(item['pokemon_id']) < 0) {
+    excludedPokemon.indexOf(item['pokemon_id']) < 0 && item['disappear_time'] > Date.now()) {
     // add marker to map and item to dict
     if (item.marker) {
       item.marker.setMap(null)
