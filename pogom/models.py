@@ -30,7 +30,7 @@ args = get_args()
 flaskDb = FlaskDB()
 cache = TTLCache(maxsize=100, ttl=60 * 5)
 
-db_schema_version = 8
+db_schema_version = 9
 
 
 class MyRetryDB(RetryOperationalError, PooledMySQLDatabase):
@@ -83,6 +83,11 @@ class Pokemon(BaseModel):
     latitude = DoubleField()
     longitude = DoubleField()
     disappear_time = DateTimeField(index=True)
+    individual_attack = IntegerField(null=True)
+    individual_defense = IntegerField(null=True)
+    individual_stamina = IntegerField(null=True)
+    move_1 = IntegerField(null=True)
+    move_2 = IntegerField(null=True)
     last_modified = DateTimeField(null=True, index=True, default=datetime.utcnow)
 
     class Meta:
@@ -711,8 +716,41 @@ def hex_bounds(center, steps):
     return (n, e, s, w)
 
 
+def construct_pokemon_dict(pokemons, p, encounter_result, d_t):
+    pokemons[p['encounter_id']] = {
+        'encounter_id': b64encode(str(p['encounter_id'])),
+        'spawnpoint_id': p['spawn_point_id'],
+        'pokemon_id': p['pokemon_data']['pokemon_id'],
+        'latitude': p['latitude'],
+        'longitude': p['longitude'],
+        'disappear_time': d_t,
+    }
+    if encounter_result is not None and 'wild_pokemon' in encounter_result['responses']['ENCOUNTER']:
+        pokemon_info = encounter_result['responses']['ENCOUNTER']['wild_pokemon']['pokemon_data']
+        attack = pokemon_info.get('individual_attack', 0)
+        defense = pokemon_info.get('individual_defense', 0)
+        stamina = pokemon_info.get('individual_stamina', 0)
+        pokemons[p['encounter_id']].update({
+            'individual_attack': attack,
+            'individual_defense': defense,
+            'individual_stamina': stamina,
+            'move_1': pokemon_info['move_1'],
+            'move_2': pokemon_info['move_2'],
+        })
+    else:
+        if encounter_result is not None and 'wild_pokemon' not in encounter_result['responses']['ENCOUNTER']:
+            log.warning("Error encountering {}, status code: {}".format(p['encounter_id'], encounter_result['responses']['ENCOUNTER']['status']))
+        pokemons[p['encounter_id']].update({
+            'individual_attack': None,
+            'individual_defense': None,
+            'individual_stamina': None,
+            'move_1': None,
+            'move_2': None,
+        })
+
+
 # todo: this probably shouldn't _really_ be in "models" anymore, but w/e
-def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue):
+def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, api):
     pokemons = {}
     pokestops = {}
     gyms = {}
@@ -738,6 +776,8 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue):
                 fortsfound = True
                 if forts is None:
                     forts = cell.get('forts', [])
+
+
                 else:
                     forts += cell.get('forts', [])
 
@@ -770,15 +810,17 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue):
 
             printPokemon(p['pokemon_data']['pokemon_id'], p['latitude'],
                          p['longitude'], d_t)
-            pokemons[p['encounter_id']] = {
-                'encounter_id': b64encode(str(p['encounter_id'])),
-                'spawnpoint_id': p['spawn_point_id'],
-                'pokemon_id': p['pokemon_data']['pokemon_id'],
-                'latitude': p['latitude'],
-                'longitude': p['longitude'],
-                'disappear_time': d_t
-            }
 
+            # Scan for IVs and moves
+            encounter_result = None
+            if (args.encounter and (p['pokemon_data']['pokemon_id'] in args.encounter_whitelist or
+                                    p['pokemon_data']['pokemon_id'] not in args.encounter_blacklist and not args.encounter_whitelist)):
+                time.sleep(args.encounter_delay)
+                encounter_result = api.encounter(encounter_id=p['encounter_id'],
+                                                 spawn_point_id=p['spawn_point_id'],
+                                                 player_latitude=step_location[0],
+                                                 player_longitude=step_location[1])
+            construct_pokemon_dict(pokemons, p, encounter_result, d_t)
             if args.webhooks:
                 wh_update_queue.put(('pokemon', {
                     'encounter_id': b64encode(str(p['encounter_id'])),
@@ -788,7 +830,12 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue):
                     'longitude': p['longitude'],
                     'disappear_time': calendar.timegm(d_t.timetuple()),
                     'last_modified_time': p['last_modified_timestamp_ms'],
-                    'time_until_hidden_ms': p['time_till_hidden_ms']
+                    'time_until_hidden_ms': p['time_till_hidden_ms'],
+                    'individual_attack': pokemons[p['encounter_id']]['individual_attack'],
+                    'individual_defense': pokemons[p['encounter_id']]['individual_defense'],
+                    'individual_stamina': pokemons[p['encounter_id']]['individual_stamina'],
+                    'move_1': pokemons[p['encounter_id']]['move_1'],
+                    'move_2': pokemons[p['encounter_id']]['move_2']
                 }))
 
     if fortsfound:
@@ -1091,6 +1138,7 @@ def clean_db_loop(args):
                          .delete()
                          .where((Pokemon.disappear_time <
                                 (datetime.utcnow() - timedelta(hours=args.purge_data)))))
+                query.execute()
 
             log.info('Regular database cleaning complete')
             time.sleep(60)
@@ -1101,7 +1149,13 @@ def clean_db_loop(args):
 def bulk_upsert(cls, data):
     num_rows = len(data.values())
     i = 0
-    step = 120
+
+    if args.db_type == 'mysql':
+        step = 120
+    else:
+        # SQLite has a default max number of parameters of 999,
+        # so we need to limit how many rows we insert for it.
+        step = 50
 
     while i < num_rows:
         log.debug('Inserting items %d to %d', i, min(i + step, num_rows))
@@ -1204,6 +1258,16 @@ def database_migrate(db, old_ver):
         )
 
     if old_ver < 8:
+        migrate(
+            migrator.add_column('pokemon', 'individual_attack', IntegerField(null=True, default=0)),
+            migrator.add_column('pokemon', 'individual_defense', IntegerField(null=True, default=0)),
+            migrator.add_column('pokemon', 'individual_stamina', IntegerField(null=True, default=0)),
+            migrator.add_column('pokemon', 'move_1', IntegerField(null=True, default=0)),
+            migrator.add_column('pokemon', 'move_2', IntegerField(null=True, default=0))
+        )
+
+
+    if old_ver < 9:
         migrate(
             migrator.add_column('pokemon', 'last_modified', DateTimeField(null=True, index=True)),
             migrator.add_column('pokestop', 'last_updated', DateTimeField(null=True, index=True))
