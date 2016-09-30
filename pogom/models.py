@@ -95,7 +95,7 @@ class Pokemon(BaseModel):
 
     @staticmethod
     def get_active(swLat, swLng, neLat, neLng, timestamp=0, oSwLat=None, oSwLng=None, oNeLat=None, oNeLng=None):
-        query = Pokemon.select(Pokemon.disappear_time, Pokemon.pokemon_id, Pokemon.encounter_id, Pokemon.latitude, Pokemon.longitude, Pokemon.spawnpoint_id)
+        query = Pokemon.select()
         if not (swLat and swLng and neLat and neLng):
             query = (query
                      .where(Pokemon.disappear_time > datetime.utcnow())
