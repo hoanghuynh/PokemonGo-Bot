@@ -839,12 +839,12 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, a
     if fortsfound:
         if config['parse_pokestops']:
             stop_ids = [f['id'] for f in forts if f.get('type') == 1]
-        if len(stop_ids) > 0:
-            query = (Pokestop
-                     .select(Pokestop.pokestop_id, Pokestop.last_modified)
-                     .where((Pokestop.pokestop_id << stop_ids))
-                     .dicts())
-            encountered_pokestops = [(f['pokestop_id'], int((f['last_modified'] - datetime(1970, 1, 1)).total_seconds())) for f in query]
+            if len(stop_ids) > 0:
+                query = (Pokestop
+                         .select(Pokestop.pokestop_id, Pokestop.last_modified)
+                         .where((Pokestop.pokestop_id << stop_ids))
+                         .dicts())
+                encountered_pokestops = [(f['pokestop_id'], int((f['last_modified'] - datetime(1970, 1, 1)).total_seconds())) for f in query]
 
         for f in forts:
             if config['parse_pokestops'] and f.get('type') == 1:  # Pokestops
