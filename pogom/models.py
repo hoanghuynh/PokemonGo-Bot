@@ -776,8 +776,6 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, a
                 fortsfound = True
                 if forts is None:
                     forts = cell.get('forts', [])
-
-
                 else:
                     forts += cell.get('forts', [])
 
@@ -1265,7 +1263,6 @@ def database_migrate(db, old_ver):
             migrator.add_column('pokemon', 'move_1', IntegerField(null=True, default=0)),
             migrator.add_column('pokemon', 'move_2', IntegerField(null=True, default=0))
         )
-
 
     if old_ver < 9:
         migrate(
